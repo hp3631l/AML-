@@ -1,0 +1,106 @@
+{
+  "class_distribution": {
+    "accounts": {
+      "normal": 3100,
+      "suspicious": 1900
+    },
+    "edges": {
+      "normal": 149,
+      "suspicious": 0
+    }
+  },
+  "motif_counts": {
+    "agentic_bot": 401,
+    "burst": 99,
+    "fan_in": 17,
+    "fan_out": 52,
+    "peel_off": 7,
+    "recursive_loop": 1321,
+    "scatter_gather": 3
+  },
+  "country_transition_rate": {
+    "normal": 0.10738255083560944,
+    "suspicious": 0.0
+  },
+  "histograms": {
+    "tx_frequency": {
+      "normal_hist": [
+        3097,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2
+      ],
+      "suspicious_hist": [
+        1898,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "intersection": 0.9994736842105263,
+      "range_overlap": 0.9999999980000001,
+      "flag": "FLAG: nearly-identical"
+    },
+    "delay_between_transactions": {
+      "normal_hist": [
+        147,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "suspicious_hist": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "intersection": 0.0,
+      "range_overlap": 0.0,
+      "flag": "FLAG: fully-separable"
+    },
+    "country_transition": {
+      "normal_hist": [
+        133,
+        16
+      ],
+      "suspicious_hist": [
+        0,
+        0
+      ],
+      "intersection": 0.0,
+      "range_overlap": 0.0,
+      "flag": "FLAG: fully-separable"
+    }
+  }
+}

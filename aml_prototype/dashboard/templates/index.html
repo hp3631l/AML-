@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AML Neural Network Command Center</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0e1a;--surface:#111827;--card:#1a2236;--border:#1e3a5f;--accent:#00d4ff;--green:#00ff9f;--red:#ff4757;--yellow:#ffd32a;--text:#e0e6f0;--muted:#6b7fa3}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;overflow-x:hidden}
+.header{background:linear-gradient(135deg,#0d1b3e,#0a0e1a);border-bottom:1px solid var(--border);padding:16px 32px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:100;backdrop-filter:blur(10px)}
+.logo{width:36px;height:36px;background:linear-gradient(135deg,var(--accent),#0066ff);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.header h1{font-size:20px;font-weight:700;background:linear-gradient(to right,var(--accent),#7b8fff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+.header .subtitle{color:var(--muted);font-size:13px;margin-left:auto}
+.pulse{width:10px;height:10px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;margin-left:12px}
+.pulse.offline{background:var(--red);animation:none;box-shadow:0 0 0 4px rgba(255,71,87,0.2)}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,255,159,0.4)}70%{box-shadow:0 0 0 8px rgba(0,255,159,0)}}
+.status-bar{display:flex;align-items:center;gap:10px;padding:10px 32px;border-bottom:1px solid var(--border);background:rgba(17,24,39,0.6);position:sticky;top:64px;z-index:90;backdrop-filter:blur(8px)}
+.status-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--border);font-size:12px;color:var(--muted)}
+.status-chip strong{color:var(--text);font-weight:600}
+.status-chip .dot{width:8px;height:8px;border-radius:50%}
+.status-chip.ok .dot{background:var(--green)}
+.status-chip.warn .dot{background:var(--yellow)}
+.status-chip.err .dot{background:var(--red)}
+.status-right{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding:24px 32px 0}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(to right,var(--accent),#7b8fff)}
+.stat-label{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:1px}
+.stat-value{font-size:32px;font-weight:700;margin:8px 0;color:var(--accent)}
+.stat-sub{font-size:12px;color:var(--muted)}
+.main{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:16px 32px}
+.bottom{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;padding:0 32px 32px}
+.panel{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.panel-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:rgba(0,212,255,0.03)}
+.panel-title{font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px}
+.panel-title .icon{font-size:16px}
+.panel-body{padding:20px}
+.toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.btn{padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all 0.2s}
+.btn-primary{background:linear-gradient(135deg,#0066ff,var(--accent));color:#fff}
+.btn-primary:hover{opacity:0.9;transform:translateY(-1px)}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+.btn-danger{background:linear-gradient(135deg,#ff4757,#ff6b6b);color:#fff}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-ghost{background:var(--surface);color:var(--muted);border:1px solid var(--border)}
+.toggle{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;border:1px solid var(--border);background:var(--surface);font-size:11px;color:var(--muted);cursor:pointer}
+.toggle.active{color:var(--text);border-color:var(--accent)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px}
+select,input{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:13px;width:100%;outline:none;transition:border-color 0.2s}
+select:focus,input:focus{border-color:var(--accent)}
+.search-input{padding:6px 10px;border-radius:8px;font-size:12px;width:160px}
+.tabs{display:inline-flex;gap:6px;background:var(--surface);border:1px solid var(--border);padding:4px;border-radius:8px}
+.tab{padding:5px 10px;border-radius:6px;font-size:12px;color:var(--muted);cursor:pointer;transition:all 0.2s}
+.tab.active{background:var(--card);color:var(--text);border:1px solid var(--border)}
+.log-box{background:var(--surface);border-radius:8px;padding:16px;height:220px;overflow-y:auto;font-family:'Courier New',monospace;font-size:12px;line-height:1.6;border:1px solid var(--border)}
+.log-line{color:#7fbfff;margin:2px 0}.log-line.epoch{color:var(--green)}.log-line.saved{color:var(--yellow)}.log-line.error{color:var(--red)}.log-line.done{color:var(--accent)}
+.alert-feed{height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+.alert-item{background:var(--surface);border-radius:8px;padding:12px 16px;border-left:3px solid;transition:transform 0.2s;animation:slideIn 0.3s ease}
+@keyframes slideIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}
+.alert-item.high{border-color:var(--red)}
+.alert-item.medium{border-color:var(--yellow)}
+.alert-item.low{border-color:var(--green)}
+.alert-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.alert-id{font-size:11px;color:var(--muted);font-family:monospace}
+.risk-badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px}
+.risk-badge.HIGH{background:rgba(255,71,87,0.2);color:var(--red)}
+.risk-badge.MEDIUM{background:rgba(255,211,42,0.2);color:var(--yellow)}
+.risk-badge.LOW{background:rgba(0,255,159,0.2);color:var(--green)}
+.alert-detail{font-size:12px;color:var(--muted)}
+.alert-amount{font-size:14px;font-weight:700;color:var(--text)}
+.alert-meta{display:flex;gap:8px;align-items:center;margin-top:6px;font-size:11px;color:var(--muted)}
+.badge{font-size:10px;padding:2px 6px;border-radius:999px;border:1px solid var(--border);color:var(--muted)}
+.badge.pending{color:var(--yellow);border-color:rgba(255,211,42,0.4)}
+.badge.confirm{color:var(--green);border-color:rgba(0,255,159,0.4)}
+.badge.reject{color:var(--red);border-color:rgba(255,71,87,0.4)}
+.bank-stat{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)}
+.bank-stat:last-child{border-bottom:none}
+.bank-dot{width:8px;height:8px;border-radius:50%;margin-right:8px;display:inline-block}
+.bank-dot.bank_a{background:#00d4ff}.bank-dot.bank_b{background:#7b8fff}.bank-dot.bank_c{background:#00ff9f}
+.bar-container{flex:1;margin:0 16px;height:6px;background:var(--surface);border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width 0.8s ease}
+.bar-fill.bank_a{background:linear-gradient(to right,#00d4ff,#0066ff)}
+.bar-fill.bank_b{background:linear-gradient(to right,#7b8fff,#4455ff)}
+.bar-fill.bank_c{background:linear-gradient(to right,#00ff9f,#00cc77)}
+.checkbox-row{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.checkbox-row input[type=checkbox]{width:auto}
+.preset-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.chip-btn{padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:var(--surface);font-size:11px;color:var(--muted);cursor:pointer}
+.chip-btn:hover{border-color:var(--accent);color:var(--text)}
+.empty-state{text-align:center;color:var(--muted);padding:40px 20px;font-size:13px}
+.empty-state .icon{font-size:32px;margin-bottom:8px}
+.progress-ring{display:inline-flex;align-items:center;gap:6px;font-size:13px}
+.toast{position:fixed;top:80px;right:24px;background:var(--card);border:1px solid var(--green);border-radius:10px;padding:14px 20px;font-size:13px;z-index:999;animation:slideIn 0.3s ease;max-width:320px}
+.toast.error{border-color:var(--red)}
+.toast.warn{border-color:var(--yellow)}
+#graphCanvas{width:100%;height:300px;background:var(--surface);border-radius:8px}
+.graph-controls{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:12px;color:var(--muted)}
+.graph-controls input[type=range]{flex:1}
+.graph-stats{margin-left:auto}
+@media (max-width:1200px){
+  .grid{grid-template-columns:repeat(2,1fr)}
+  .main{grid-template-columns:1fr}
+  .bottom{grid-template-columns:1fr}
+  .status-bar{flex-wrap:wrap}
+}
+@media (max-width:700px){
+  .header{flex-direction:column;align-items:flex-start}
+  .header .subtitle{margin-left:0}
+  .status-bar{top:96px}
+  .grid,.main,.bottom{padding:16px}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">🧠</div>
+  <div>
+    <h1>AML Neural Network Command Center</h1>
+    <div class="subtitle">Temporal GraphSAGE · Federated Learning · Real-Time Detection</div>
+  </div>
+  <div class="pulse" id="systemPulse" title="System Online"></div>
+</div>
+
+<div class="status-bar">
+  <div class="status-chip" id="chipTraining"><span class="dot"></span>Training: <strong id="chipTrainingText">Idle</strong></div>
+  <div class="status-chip" id="chipPipeline"><span class="dot"></span>Pipeline: <strong id="chipPipelineText">Idle</strong></div>
+  <div class="status-chip" id="chipData"><span class="dot"></span>Data: <strong id="chipDataText">Checking…</strong></div>
+  <div class="status-right">Last update <span id="lastUpdate">—</span></div>
+</div>
+
+<!-- Stat Cards -->
+<div class="grid">
+  <div class="stat-card">
+    <div class="stat-label">Total Accounts</div>
+    <div class="stat-value" id="totalAccounts">—</div>
+    <div class="stat-sub">Across 3 federated banks</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Suspicious Flagged</div>
+    <div class="stat-value" id="suspiciousCount" style="color:var(--red)">—</div>
+    <div class="stat-sub" id="suspiciousRate">By simulator ground truth</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Alerts Generated</div>
+    <div class="stat-value" id="alertsCount" style="color:var(--yellow)">—</div>
+    <div class="stat-sub" id="alertsSub">By last pipeline run</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Injected Transactions</div>
+    <div class="stat-value" id="injectedCount" style="color:var(--green)">—</div>
+    <div class="stat-sub">Via GUI this session</div>
+  </div>
+</div>
+
+<!-- Main Grid: Training + Alerts -->
+<div class="main">
+
+  <!-- Training Monitor -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title"><span class="icon">🎯</span> Neural Network Training Monitor</div>
+      <div class="toolbar">
+        <button class="btn btn-primary btn-sm" id="trainBtn" onclick="startTraining()">▶ Train Model</button>
+        <button class="btn btn-primary btn-sm" style="background:linear-gradient(135deg,#7b8fff,#4455ff)" id="pipelineBtn" onclick="startPipeline()">🔍 Run Pipeline</button>
+        <button class="btn btn-sm btn-ghost" onclick="clearTrainingLog()">Clear Log</button>
+        <button class="toggle active" id="autoScrollToggle" onclick="toggleAutoScroll()">Auto-scroll</button>
+      </div>
+    </div>
+    <div class="panel-body">
+      <div class="log-box" id="trainingLog">
+        <div class="log-line">Waiting for training to start...</div>
+        <div class="log-line" style="color:var(--muted)">Click "Train Model" to begin.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Injected Alerts Feed -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title"><span class="icon">🚨</span> Live Alert Feed</div>
+      <div class="toolbar">
+        <div class="tabs">
+          <div class="tab active" id="tabInjected" onclick="setAlertSource('injected')">Injected</div>
+          <div class="tab" id="tabPipeline" onclick="setAlertSource('pipeline')">Pipeline</div>
+        </div>
+        <select id="riskFilter" class="btn-ghost" style="padding:6px 10px;font-size:12px">
+          <option value="all">All Risk</option>
+          <option value="HIGH">High</option>
+          <option value="MEDIUM">Medium</option>
+          <option value="LOW">Low</option>
+        </select>
+        <input id="alertSearch" class="search-input" placeholder="Search account / motif">
+        <button class="btn btn-sm btn-ghost" onclick="clearAlerts()">Clear</button>
+      </div>
+    </div>
+    <div class="panel-body" style="padding:12px">
+      <div class="alert-feed" id="alertFeed">
+        <div class="empty-state"><div class="icon">📡</div><div>No alerts yet.<br>Inject a transaction to see live scoring.</div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Bottom Grid: Injector + Banks + Graph -->
+<div class="bottom">
+
+  <!-- Transaction Injector -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title"><span class="icon">💸</span> Transaction Injector</div>
+    </div>
+    <div class="panel-body">
+      <div class="preset-row">
+        <button type="button" class="chip-btn" onclick="applyPreset('low')">Low Risk</button>
+        <button type="button" class="chip-btn" onclick="applyPreset('medium')">Cross-Border</button>
+        <button type="button" class="chip-btn" onclick="applyPreset('high')">High Risk</button>
+        <button type="button" class="chip-btn" onclick="applyPreset('smurf')">Smurfing</button>
+      </div>
+      <form id="txForm" onsubmit="injectTransaction(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Source Bank</label>
+            <select name="src_bank" id="srcBank">
+              <option value="bank_a">Bank A</option>
+              <option value="bank_b">Bank B</option>
+              <option value="bank_c">Bank C</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Destination Bank</label>
+            <select name="dst_bank" id="dstBank">
+              <option value="bank_b">Bank B</option>
+              <option value="bank_a">Bank A</option>
+              <option value="bank_c">Bank C</option>
+            </select>
+          </div>
+        </div>
+        <input type="hidden" name="src_account_id" id="srcAccountId">
+        <input type="hidden" name="dst_account_id" id="dstAccountId">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Amount (USD)</label>
+            <input type="number" name="amount" id="txAmount" value="5000" min="1" max="1000000">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Type</label>
+            <select name="tx_type">
+              <option value="wire">Wire Transfer</option>
+              <option value="ach">ACH</option>
+              <option value="cash_deposit">Cash Deposit</option>
+              <option value="cash_withdrawal">Cash Withdrawal</option>
+              <option value="internal">Internal Transfer</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Source Country</label>
+            <select name="src_country">
+              <option value="US">🇺🇸 United States</option>
+              <option value="GB">🇬🇧 United Kingdom</option>
+              <option value="DE">🇩🇪 Germany</option>
+              <option value="AE">🇦🇪 UAE</option>
+              <option value="RU">🇷🇺 Russia</option>
+              <option value="CN">🇨🇳 China</option>
+              <option value="IR">🇮🇷 Iran</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Destination Country</label>
+            <select name="dst_country">
+              <option value="US">🇺🇸 United States</option>
+              <option value="GB">🇬🇧 United Kingdom</option>
+              <option value="CH">🇨🇭 Switzerland</option>
+              <option value="AE">🇦🇪 UAE</option>
+              <option value="RU">🇷🇺 Russia</option>
+              <option value="IR">🇮🇷 Iran</option>
+              <option value="KP">🇰🇵 North Korea</option>
+            </select>
+          </div>
+        </div>
+        <div class="checkbox-row">
+          <input type="checkbox" name="make_suspicious" id="makeSus" value="true">
+          <label for="makeSus" style="font-size:13px;cursor:pointer">🔴 Force High-Risk Pattern</label>
+        </div>
+        <button type="submit" class="btn btn-danger" style="width:100%" id="injectBtn">⚡ Inject Transaction</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Bank Stats -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title"><span class="icon">🏦</span> Bank Node Statistics</div>
+    </div>
+    <div class="panel-body">
+      <div id="bankStats">
+        <div class="bank-stat">
+          <span><span class="bank-dot bank_a"></span>Bank A</span>
+          <div class="bar-container"><div class="bar-fill bank_a" id="barA" style="width:0%"></div></div>
+          <span id="statA" style="font-size:12px;color:var(--muted)">Loading...</span>
+        </div>
+        <div class="bank-stat">
+          <span><span class="bank-dot bank_b"></span>Bank B</span>
+          <div class="bar-container"><div class="bar-fill bank_b" id="barB" style="width:0%"></div></div>
+          <span id="statB" style="font-size:12px;color:var(--muted)">Loading...</span>
+        </div>
+        <div class="bank-stat">
+          <span><span class="bank-dot bank_c"></span>Bank C</span>
+          <div class="bar-container"><div class="bar-fill bank_c" id="barC" style="width:0%"></div></div>
+          <span id="statC" style="font-size:12px;color:var(--muted)">Loading...</span>
+        </div>
+      </div>
+      <canvas id="riskChart" style="margin-top:20px;max-height:160px"></canvas>
+    </div>
+  </div>
+
+  <!-- Graph Visualizer -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title"><span class="icon">🕸️</span> Transaction Graph (Sample)</div>
+      <button class="btn btn-sm" style="background:var(--surface);color:var(--muted);border:1px solid var(--border)" onclick="loadGraph()">Refresh</button>
+    </div>
+    <div class="panel-body" style="padding:12px">
+      <canvas id="graphCanvas"></canvas>
+      <div class="graph-controls">
+        <span>Min edge amount</span>
+        <input type="range" id="edgeMin" min="0" max="50000" step="500" value="0" oninput="updateEdgeFilter()">
+        <span id="edgeMinLabel">$0</span>
+        <span class="graph-stats" id="graphStats">—</span>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:16px;font-size:12px;color:var(--muted)">
+        <span><span style="color:var(--red)">●</span> Suspicious</span>
+        <span><span style="color:var(--accent)">●</span> Normal</span>
+        <span><span style="color:var(--green)">●</span> Flagged Edge</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let trainingSSE = null;
+let riskChart = null;
+let alertSource = 'injected';
+let autoScrollLog = true;
+let lastInjectedAlerts = [];
+let lastPipelineAlerts = [];
+let lastGraphData = null;
+let activePreset = 'low';
+let smurfPair = null;
+
+// ── Status polling ────────────────────────────────────────────────
+function updateStatus() {
+  fetch('/api/status').then(r=>r.json()).then(d=>{
+    document.getElementById('totalAccounts').textContent = d.total_accounts.toLocaleString();
+    document.getElementById('suspiciousCount').textContent = d.suspicious_accounts.toLocaleString();
+    document.getElementById('alertsCount').textContent = d.alerts_count.toLocaleString();
+    document.getElementById('injectedCount').textContent = d.injected_tx_count.toLocaleString();
+    const rate = d.total_accounts ? (d.suspicious_accounts / d.total_accounts * 100).toFixed(1) : '0.0';
+    document.getElementById('suspiciousRate').textContent = `${rate}% flagged`;
+    document.getElementById('alertsSub').textContent = d.alerts_count ? `${d.alerts_count} patterns in memory` : 'No patterns yet';
+    document.getElementById('trainBtn').disabled = d.training_running;
+    document.getElementById('pipelineBtn').disabled = d.pipeline_running;
+    document.getElementById('trainBtn').textContent = d.training_running ? '⏳ Training...' : '▶ Train Model';
+    document.getElementById('pipelineBtn').textContent = d.pipeline_running ? '⏳ Running...' : '🔍 Run Pipeline';
+    document.getElementById('chipTrainingText').textContent = d.training_running ? 'Running' : 'Idle';
+    document.getElementById('chipPipelineText').textContent = d.pipeline_running ? 'Running' : 'Idle';
+    document.getElementById('chipDataText').textContent = d.total_accounts ? 'Available' : 'Unavailable';
+    setChipState('chipTraining', d.training_running ? 'warn' : 'ok');
+    setChipState('chipPipeline', d.pipeline_running ? 'warn' : 'ok');
+    setChipState('chipData', d.total_accounts ? 'ok' : 'err');
+    const pulse = document.getElementById('systemPulse');
+    if(d.total_accounts) pulse.classList.remove('offline');
+    else pulse.classList.add('offline');
+    document.getElementById('lastUpdate').textContent = formatTime(d.timestamp);
+  }).catch(()=>{});
+}
+
+function setChipState(id, state) {
+  const chip = document.getElementById(id);
+  if(!chip) return;
+  chip.classList.remove('ok','warn','err');
+  chip.classList.add(state);
+}
+
+function formatTime(ts) {
+  try { return new Date(ts).toLocaleTimeString(); }
+  catch { return '—'; }
+}
+
+// ── Bank stats ────────────────────────────────────────────────────
+function updateBankStats() {
+  fetch('/api/bank_stats').then(r=>r.json()).then(d=>{
+    for(const [bank, s] of Object.entries(d)) {
+      const key = bank.replace('bank_','');
+      const el = document.getElementById('stat'+key.toUpperCase());
+      const bar = document.getElementById('bar'+key.toUpperCase());
+      if(el && s.total_accounts) {
+        el.textContent = `${s.suspicious_accounts}/${s.total_accounts} (${s.suspicion_rate}%)`;
+        bar.style.width = Math.min(s.suspicion_rate * 3, 100)+'%';
+      }
+    }
+    updateRiskChart(d);
+  }).catch(()=>{});
+}
+
+function updateRiskChart(data) {
+  const ctx = document.getElementById('riskChart').getContext('2d');
+  if(riskChart) riskChart.destroy();
+  const banks = ['bank_a','bank_b','bank_c'];
+  const labels = ['Bank A','Bank B','Bank C'];
+  const sus = banks.map(b=>data[b]?.suspicious_accounts||0);
+  const normal = banks.map(b=>(data[b]?.total_accounts||0)-(data[b]?.suspicious_accounts||0));
+  riskChart = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {label:'Suspicious',data:sus,backgroundColor:'rgba(255,71,87,0.7)',borderRadius:4},
+        {label:'Normal',data:normal,backgroundColor:'rgba(0,212,255,0.2)',borderRadius:4}
+      ]
+    },
+    options:{
+      responsive:true,
+      plugins:{legend:{labels:{color:'#6b7fa3',font:{size:11}}}},
+      scales:{
+        x:{ticks:{color:'#6b7fa3'},grid:{color:'rgba(30,58,95,0.5)'},stacked:true},
+        y:{ticks:{color:'#6b7fa3'},grid:{color:'rgba(30,58,95,0.5)'},stacked:true}
+      }
+    }
+  });
+}
+
+// ── Training ──────────────────────────────────────────────────────
+function startTraining() {
+  fetch('/api/start_training',{method:'POST'}).then(r=>r.json()).then(d=>{
+    if(d.status==='already_running') return showToast('Training already running','warn');
+    const logBox = document.getElementById('trainingLog');
+    logBox.innerHTML='';
+    connectTrainingSSE();
+    showToast('Training started!');
+  });
+}
+
+function startPipeline() {
+  fetch('/api/start_pipeline',{method:'POST'}).then(r=>r.json()).then(d=>{
+    if(d.status==='already_running') return showToast('Pipeline already running','warn');
+    showToast('Pipeline started! Check log.');
+    connectTrainingSSE();
+  });
+}
+
+function clearTrainingLog() {
+  const logBox = document.getElementById('trainingLog');
+  logBox.innerHTML = '<div class="log-line">Log cleared.</div>';
+}
+
+function toggleAutoScroll() {
+  autoScrollLog = !autoScrollLog;
+  const toggle = document.getElementById('autoScrollToggle');
+  if(autoScrollLog) toggle.classList.add('active');
+  else toggle.classList.remove('active');
+}
+
+function connectTrainingSSE() {
+  if(trainingSSE) trainingSSE.close();
+  trainingSSE = new EventSource('/api/training_stream');
+  const logBox = document.getElementById('trainingLog');
+  trainingSSE.onmessage = e => {
+    const data = JSON.parse(e.data);
+    const line = data.line.replace('\\n','');
+    if(!line.trim()) return;
+    const div = document.createElement('div');
+    div.className = 'log-line';
+    if(line.includes('Epoch')) div.className += ' epoch';
+    else if(line.includes('New best') || line.includes('Saved')) div.className += ' saved';
+    else if(line.includes('ERROR') || line.includes('error')) div.className += ' error';
+    else if(line.includes('complete') || line.includes('Complete') || line.includes('Final')) div.className += ' done';
+    div.textContent = line;
+    logBox.appendChild(div);
+    if(autoScrollLog) logBox.scrollTop = logBox.scrollHeight;
+    if(!data.running) { trainingSSE.close(); updateStatus(); }
+  };
+}
+
+// ── Transaction Injector ──────────────────────────────────────────
+function injectTransaction(e) {
+  e.preventDefault();
+  const form = document.getElementById('txForm');
+  const btn = document.getElementById('injectBtn');
+  const srcAccountId = document.getElementById('srcAccountId');
+  const dstAccountId = document.getElementById('dstAccountId');
+  btn.disabled = true;
+  btn.textContent = '⏳ Injecting...';
+
+  if(activePreset === 'smurf' && smurfPair) {
+    srcAccountId.value = smurfPair.src_account_id;
+    dstAccountId.value = smurfPair.dst_account_id;
+  }
+
+  const fd = new FormData(form);
+  if(document.getElementById('makeSus').checked) fd.set('make_suspicious','true');
+  else fd.delete('make_suspicious');
+
+  fetch('/api/inject_transaction',{method:'POST',body:fd})
+    .then(r=>r.json()).then(d=>{
+      btn.disabled=false; btn.textContent='⚡ Inject Transaction';
+      if(d.error) return showToast(d.error,'error');
+      showToast(`Injected ${d.tx_id} · Risk: ${(d.risk_score*100).toFixed(0)}%`);
+      if(activePreset === 'smurf' && d.src_account_id && d.dst_account_id) {
+        smurfPair = { src_account_id: d.src_account_id, dst_account_id: d.dst_account_id };
+        srcAccountId.value = d.src_account_id;
+        dstAccountId.value = d.dst_account_id;
+        showToast(`Smurf pair locked: ${d.src_account_id} → ${d.dst_account_id}`, 'warn');
+      }
+      loadInjectedAlerts();
+      updateStatus();
+    }).catch(err=>{
+      btn.disabled=false; btn.textContent='⚡ Inject Transaction';
+      showToast('Injection failed','error');
+    });
+}
+
+function applyPreset(type) {
+  activePreset = type;
+  const srcBank = document.getElementById('srcBank');
+  const dstBank = document.getElementById('dstBank');
+  const amount = document.getElementById('txAmount');
+  const srcCountry = document.querySelector('select[name="src_country"]');
+  const dstCountry = document.querySelector('select[name="dst_country"]');
+  const txType = document.querySelector('select[name="tx_type"]');
+  const makeSus = document.getElementById('makeSus');
+  const srcAccountId = document.getElementById('srcAccountId');
+  const dstAccountId = document.getElementById('dstAccountId');
+  if(type === 'low') {
+    srcBank.value = 'bank_a'; dstBank.value = 'bank_a';
+    amount.value = 500; txType.value = 'ach';
+    srcCountry.value = 'US'; dstCountry.value = 'US';
+    makeSus.checked = false;
+    smurfPair = null;
+    srcAccountId.value = '';
+    dstAccountId.value = '';
+  } else if(type === 'medium') {
+    srcBank.value = 'bank_a'; dstBank.value = 'bank_c';
+    amount.value = 15000; txType.value = 'wire';
+    srcCountry.value = 'US'; dstCountry.value = 'AE';
+    makeSus.checked = false;
+    smurfPair = null;
+    srcAccountId.value = '';
+    dstAccountId.value = '';
+  } else if(type === 'high') {
+    srcBank.value = 'bank_b'; dstBank.value = 'bank_c';
+    amount.value = 80000; txType.value = 'wire';
+    srcCountry.value = 'RU'; dstCountry.value = 'KP';
+    makeSus.checked = true;
+    smurfPair = null;
+    srcAccountId.value = '';
+    dstAccountId.value = '';
+  } else if(type === 'smurf') {
+    srcBank.value = 'bank_b'; dstBank.value = 'bank_b';
+    amount.value = 400; txType.value = 'internal';
+    srcCountry.value = 'US'; dstCountry.value = 'US';
+    makeSus.checked = false;
+    if(smurfPair) {
+      srcAccountId.value = smurfPair.src_account_id;
+      dstAccountId.value = smurfPair.dst_account_id;
+    } else {
+      srcAccountId.value = '';
+      dstAccountId.value = '';
+    }
+  }
+  showToast('Preset applied');
+}
+
+function setAlertSource(source) {
+  alertSource = source;
+  document.getElementById('tabInjected').classList.toggle('active', source === 'injected');
+  document.getElementById('tabPipeline').classList.toggle('active', source === 'pipeline');
+  if(source === 'pipeline') loadPipelineAlerts();
+  else loadInjectedAlerts();
+}
+
+function refreshAlertView() {
+  if(alertSource === 'pipeline') renderAlerts(lastPipelineAlerts, 'pipeline');
+  else renderAlerts(lastInjectedAlerts, 'injected');
+}
+
+function loadInjectedAlerts() {
+  fetch('/api/injected_alerts').then(r=>r.json()).then(d=>{
+    lastInjectedAlerts = d.alerts || [];
+    if(alertSource === 'injected') refreshAlertView();
+  });
+}
+
+function loadPipelineAlerts() {
+  fetch('/api/alerts').then(r=>r.json()).then(d=>{
+    lastPipelineAlerts = d.alerts || [];
+    if(alertSource === 'pipeline') refreshAlertView();
+  });
+}
+
+function renderAlerts(alerts, type) {
+  const feed = document.getElementById('alertFeed');
+  const filtered = applyAlertFilters(alerts, type);
+  if(!filtered.length) {
+    feed.innerHTML = '<div class="empty-state"><div class="icon">📡</div><div>No alerts matching your filters.</div></div>';
+    return;
+  }
+  feed.innerHTML = '';
+  filtered.forEach(a=>{
+    const risk = type === 'pipeline' ? (a.laundering_probability || 0) : (a.risk || 0);
+    const riskLabel = getRiskLabel(risk);
+    const level = riskLabel.toLowerCase();
+    const div = document.createElement('div');
+    div.className = `alert-item ${level}`;
+    if(type === 'pipeline') {
+      const accs = (a.account_ids || []).slice(0, 4).join(', ');
+      const countries = (a.countries || []).join(', ');
+      const decision = (a.agent_decision || 'pending').toLowerCase();
+      div.innerHTML = `
+        <div class="alert-top">
+          <span class="alert-id">${a.alert_id}</span>
+          <span class="risk-badge ${riskLabel}">${riskLabel} ${(risk*100).toFixed(0)}%</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div class="alert-detail">${a.motif_type || 'unknown'}<br>${accs || 'Accounts unavailable'}</div>
+          <div class="alert-amount">${formatTime(a.scenario_timestamp)}</div>
+        </div>
+        <div class="alert-meta">
+          <span>${countries || 'Countries unavailable'}</span>
+          <span class="badge ${decision}">${decision.toUpperCase()}</span>
+        </div>`;
+    } else {
+      div.innerHTML = `
+        <div class="alert-top">
+          <span class="alert-id">${a.tx_id}</span>
+          <span class="risk-badge ${a.risk_label}">${a.risk_label} ${(a.risk*100).toFixed(0)}%</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div class="alert-detail">${a.src} → ${a.dst}<br>${a.src_country} → ${a.dst_country}</div>
+          <div class="alert-amount">$${a.amount.toLocaleString()}</div>
+        </div>
+        <div class="alert-meta"><span>${a.pattern_summary || 'Single transaction'}</span></div>`;
+    }
+    feed.appendChild(div);
+  });
+}
+
+function applyAlertFilters(alerts, type) {
+  const riskFilter = document.getElementById('riskFilter').value;
+  const query = document.getElementById('alertSearch').value.trim().toLowerCase();
+  return alerts.filter(a=>{
+    const risk = type === 'pipeline' ? (a.laundering_probability || 0) : (a.risk || 0);
+    const riskLabel = getRiskLabel(risk);
+    if(riskFilter !== 'all' && riskLabel !== riskFilter) return false;
+    if(!query) return true;
+    const haystack = type === 'pipeline'
+      ? `${a.alert_id} ${a.motif_type} ${(a.account_ids||[]).join(' ')} ${(a.countries||[]).join(' ')}`.toLowerCase()
+      : `${a.tx_id} ${a.src} ${a.dst} ${a.src_country} ${a.dst_country} ${a.pattern_summary || ''}`.toLowerCase();
+    return haystack.includes(query);
+  });
+}
+
+function getRiskLabel(risk) {
+  if(risk >= 0.85) return 'HIGH';
+  if(risk >= 0.60) return 'MEDIUM';
+  return 'LOW';
+}
+
+function clearAlerts() {
+  document.getElementById('alertFeed').innerHTML = '<div class="empty-state"><div class="icon">📡</div><div>Cleared.</div></div>';
+}
+
+// ── Graph Visualizer ──────────────────────────────────────────────
+function loadGraph() {
+  fetch('/api/graph_data').then(r=>r.json()).then(data=>{
+    lastGraphData = data;
+    const edges = data.edges || [];
+    const maxAmount = edges.reduce((m,e)=>Math.max(m, e.amount || 0), 0);
+    const edgeMin = document.getElementById('edgeMin');
+    edgeMin.max = Math.max(5000, Math.ceil(maxAmount / 500) * 500);
+    if(parseFloat(edgeMin.value) > edgeMin.max) edgeMin.value = edgeMin.max;
+    renderGraph();
+  });
+}
+
+function updateEdgeFilter() {
+  renderGraph();
+}
+
+function renderGraph() {
+  if(!lastGraphData) return;
+  const data = lastGraphData;
+  const canvas = document.getElementById('graphCanvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth;
+  canvas.height = 300;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  const nodeMap = {};
+  const nodes = data.nodes || [];
+  const edges = data.edges || [];
+  const minAmount = parseFloat(document.getElementById('edgeMin').value || 0);
+  document.getElementById('edgeMinLabel').textContent = `$${minAmount.toLocaleString()}`;
+
+  // Assign positions
+  nodes.forEach((n,i)=>{
+    const angle = (i / nodes.length) * Math.PI * 2;
+    const r = 100 + Math.random()*80;
+    nodeMap[n.id] = {
+      x: canvas.width/2 + r * Math.cos(angle) + (Math.random()-0.5)*60,
+      y: canvas.height/2 + r * Math.sin(angle) + (Math.random()-0.5)*60,
+      suspicious: n.suspicious,
+      bank: n.bank
+    };
+  });
+
+  const filteredEdges = edges.filter(e=> (e.amount || 0) >= minAmount);
+  document.getElementById('graphStats').textContent = `Nodes: ${nodes.length} · Edges: ${filteredEdges.length}`;
+
+  // Draw edges (sample)
+  ctx.globalAlpha = 0.15;
+  filteredEdges.slice(0,300).forEach(e=>{
+    const s = nodeMap[e.source];
+    const t = nodeMap[e.target];
+    if(!s||!t) return;
+    ctx.beginPath();
+    ctx.moveTo(s.x,s.y);
+    ctx.lineTo(t.x,t.y);
+    ctx.strokeStyle = e.amount > 10000 ? '#ff4757' : '#00d4ff';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  });
+
+  // Draw nodes
+  ctx.globalAlpha = 1;
+  nodes.forEach(n=>{
+    const pos = nodeMap[n.id];
+    if(!pos) return;
+    ctx.beginPath();
+    ctx.arc(pos.x,pos.y,3,0,Math.PI*2);
+    ctx.fillStyle = n.suspicious ? '#ff4757' : '#00d4ff';
+    ctx.fill();
+  });
+}
+
+// ── Toast ─────────────────────────────────────────────────────────
+function showToast(msg, type='success') {
+  const t = document.createElement('div');
+  t.className = 'toast' + (type==='error'?' error': type==='warn'?' warn':'');
+  t.textContent = (type==='error'?'❌ ': type==='warn'?'⚠️ ':'✅ ') + msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(), 4000);
+}
+
+// ── Init ──────────────────────────────────────────────────────────
+updateStatus();
+updateBankStats();
+loadGraph();
+setAlertSource('injected');
+loadPipelineAlerts();
+document.getElementById('riskFilter').addEventListener('change', refreshAlertView);
+document.getElementById('alertSearch').addEventListener('input', refreshAlertView);
+setInterval(updateStatus, 3000);
+setInterval(()=>{ alertSource === 'pipeline' ? loadPipelineAlerts() : loadInjectedAlerts(); }, 2500);
+setInterval(updateBankStats, 15000);
+</script>
+</body>
+</html>
